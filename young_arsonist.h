@@ -12,4 +12,5 @@ long double res; //минимальное время сгорания
 struct {
     int x1, x2, y1, y2;
     long int time;
-} match[MAX_N] ;    //исходные значения
+
+} match[MAX_N];    //исходные значения
