@@ -21,7 +21,7 @@ struct vertex {  //вершина графа
 };
 struct graph {  //граф
     int count_vertex; //количество вершин в графе
-    long int edge[MAX_VERTEX][MAX_VERTEX];  //ребра графа
+    long int weight[MAX_VERTEX][MAX_VERTEX];  //вес ребр графа
     struct vertex list[MAX_VERTEX];   //список вершин
 };
 struct result {
@@ -100,18 +100,18 @@ int get_vertex(int vx, int vy, struct graph *g) {
     (*g).list[(*g).count_vertex].x = vx;
     (*g).list[(*g).count_vertex].y = vy;
     for (int i = 0; i != (*g).count_vertex; i++) {  //заполнение несуществующих ребер
-        (*g).edge[i][(*g).count_vertex] = NONE_VALUE;
-        (*g).edge[(*g).count_vertex][i] = NONE_VALUE;
+        (*g).weight[i][(*g).count_vertex] = NONE_VALUE;
+        (*g).weight[(*g).count_vertex][i] = NONE_VALUE;
     }
-    (*g).edge[(*g).count_vertex][(*g).count_vertex] = 0;
+    (*g).weight[(*g).count_vertex][(*g).count_vertex] = 0;
     (*g).count_vertex++;
     return (*g).count_vertex - 1;
 
 }
 
 void add_edge(int x1, int y1, int x2, int y2, long int time, struct graph *g) {
-    (*g).edge[get_vertex(x1, y1, g)][get_vertex(x2, y2, g)] = time;
-    (*g).edge[get_vertex(x2, y2, g)][get_vertex(x1, y1, g)] = time;
+    (*g).weight[get_vertex(x1, y1, g)][get_vertex(x2, y2, g)] = time;
+    (*g).weight[get_vertex(x2, y2, g)][get_vertex(x1, y1, g)] = time;
 }
 
 struct graph make_graph(struct match_list d) {
@@ -138,13 +138,13 @@ double get_time_at(int p, struct graph g, double distance[MAX_VERTEX][MAX_VERTEX
     }
     for (int i = 0; i < g.count_vertex; i++) {
         for (int j = i + 1; j < g.count_vertex; j++) {
-            if (g.edge[i][j] < NONE_VALUE) {
-                if ((distance[p][i] < (distance[p][j] + (double) g.edge[i][j])) &&
-                    (distance[p][j] < (distance[p][i] + (double) g.edge[i][j]))) {
+            if (g.weight[i][j] < NONE_VALUE) {
+                if ((distance[p][i] < (distance[p][j] + (double) g.weight[i][j])) &&
+                    (distance[p][j] < (distance[p][i] + (double) g.weight[i][j]))) {
                     if (distance[p][i] < distance[p][j]) {
-                        this_edge = distance[p][j] + ((double) g.edge[i][j] - (distance[p][j] - distance[p][i])) / 2;
+                        this_edge = distance[p][j] + ((double) g.weight[i][j] - (distance[p][j] - distance[p][i])) / 2;
                     } else {
-                        this_edge = distance[p][i] + ((double) g.edge[i][j] - (distance[p][i] - distance[p][j])) / 2;
+                        this_edge = distance[p][i] + ((double) g.weight[i][j] - (distance[p][i] - distance[p][j])) / 2;
                     }
                     if (this_edge > current_time) {
                         current_time = this_edge;
@@ -184,7 +184,7 @@ struct result calculate(struct graph g) {
 
     for (int i = 0; i < g.count_vertex; i++) {
         for (int j = 0; j < g.count_vertex; j++) {
-            distance[i][j] = (double) g.edge[i][j];
+            distance[i][j] = (double) g.weight[i][j];
         }
     }
 
