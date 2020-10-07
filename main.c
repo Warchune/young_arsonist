@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #define FILE_IN "./files/f.in"
 #define FILE_OUT "./files/f.out"
@@ -53,42 +54,30 @@ int main() {
 }
 
 struct match_list read() {
-    struct match_list d;
+    struct match_list ml;
+    bool err_res;
     FILE *f_in;
     f_in = fopen(FILE_IN, "r");
     if (f_in) {
-        fscanf(f_in, "%d", &d.len);
-        if ((d.len > 0) && (d.len <= MAX_MATCHES)) {
-            for (int i = 0; i < d.len; i++) {
-                fscanf(f_in, "%d%d%d%d%ld", &d.list[i].x1, &d.list[i].y1, &d.list[i].x2, &d.list[i].y2,
-                       &d.list[i].time);
-                if ((d.list[i].x1 >= -200) && (d.list[i].x1 <= 200) &&
-                    (d.list[i].y1 >= -200) && (d.list[i].y1 <= 200) &&
-                    (d.list[i].x2 >= -200) && (d.list[i].x2 <= 200) &&
-                    (d.list[i].y2 >= -200) && (d.list[i].y2 <= 200)) {
-                    if ((d.list[i].time > 0) && (d.list[i].x1 < NONE_VALUE)){
-                        continue;
-                    } else{
-                        perror("Incorrect data format: time");
-                        exit(errno);
-                    }
-                } else {
-                    perror("Incorrect data format: coordinates");
-                    exit(errno);
-                }
-
-            }
-            fclose(f_in);
-        } else {
-            perror("Incorrect data format: count matches");
-            exit(errno);
+        err_res = fscanf(f_in, "%d", &ml.len);
+        if (!err_res) {
+            printf("Incorrect data format: line(%d)\n", 1);
+            exit(1);
         }
+        for (int i = 0; i <= ml.len; i++) {
+            err_res = fscanf(f_in, "%d%d%d%d%ld", &ml.list[i].x1, &ml.list[i].y1, &ml.list[i].x2, &ml.list[i].y2, &ml.list[i].time);
+            if (!err_res){
+                printf("Incorrect data format: line(%d)\n", i+1);
+                exit(1);
+            }
+        }
+        fclose(f_in);
     } else {
         perror("read: fopen() ");
         exit(errno);
     }
 
-    return d;
+    return ml;
 }
 
 int get_vertex(int vx, int vy, struct graph *g) {
@@ -109,7 +98,7 @@ int get_vertex(int vx, int vy, struct graph *g) {
 
 }
 
-void add_edge(int x1, int y1, int x2, int y2, long int time, struct graph *g) {
+void get_weight(int x1, int y1, int x2, int y2, long int time, struct graph *g) {
     (*g).weight[get_vertex(x1, y1, g)][get_vertex(x2, y2, g)] = time;
     (*g).weight[get_vertex(x2, y2, g)][get_vertex(x1, y1, g)] = time;
 }
@@ -119,10 +108,10 @@ struct graph make_graph(struct match_list d) {
     g.count_vertex = 0;
     for (int i = 0; i < d.len; i++) {
         //  умножение координат на 2, соответственно удвоение спичек
-        add_edge(d.list[i].x1 * 2, d.list[i].y1 * 2, d.list[i].x1 + d.list[i].x2, d.list[i].y1 + d.list[i].y2,
-                 d.list[i].time, &g);
-        add_edge(d.list[i].x1 + d.list[i].x2, d.list[i].y1 + d.list[i].y2, d.list[i].x2 * 2, d.list[i].y2 * 2,
-                 d.list[i].time, &g);
+        get_weight(d.list[i].x1 * 2, d.list[i].y1 * 2, d.list[i].x1 + d.list[i].x2, d.list[i].y1 + d.list[i].y2,
+                   d.list[i].time, &g);
+        get_weight(d.list[i].x1 + d.list[i].x2, d.list[i].y1 + d.list[i].y2, d.list[i].x2 * 2, d.list[i].y2 * 2,
+                   d.list[i].time, &g);
     }
 
     return g;
