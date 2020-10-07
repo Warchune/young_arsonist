@@ -65,17 +65,22 @@ struct match_list read() {
                 if ((d.list[i].x1 >= -200) && (d.list[i].x1 <= 200) &&
                     (d.list[i].y1 >= -200) && (d.list[i].y1 <= 200) &&
                     (d.list[i].x2 >= -200) && (d.list[i].x2 <= 200) &&
-                    (d.list[i].y2 >= -200) && (d.list[i].y2 <= 200) &&
-                    (d.list[i].time > 0) && (d.list[i].x1 < NONE_VALUE)) {
-                    continue;
+                    (d.list[i].y2 >= -200) && (d.list[i].y2 <= 200)) {
+                    if ((d.list[i].time > 0) && (d.list[i].x1 < NONE_VALUE)){
+                        continue;
+                    } else{
+                        perror("Incorrect data format: time");
+                        exit(errno);
+                    }
                 } else {
-                    perror("Incorrect data format ");
+                    perror("Incorrect data format: coordinates");
                     exit(errno);
                 }
+
             }
             fclose(f_in);
         } else {
-            perror("Incorrect data format ");
+            perror("Incorrect data format: count matches");
             exit(errno);
         }
     } else {
