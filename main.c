@@ -1,18 +1,20 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #define FILE_IN "./files/f.in"
 #define FILE_OUT "./files/f.out"
-#define MAX_N 40
-#define MAX_NG (MAX_N * 2)
+#define MAX_L 40    //максимальное количество спичек
+#define MAX_NG (MAX_L * 2)  //максильное количесвтво точек графа
 #define NONE_VALUE 10000001L
 
-struct m_date{  //match_date
+struct match{  //спичка
     int x1, x2, y1, y2;
     long int time;
 };
-struct arr_m_date{  //array_match_date
-    int n;  //количество спичек
-    struct m_date match[MAX_N];
+struct match_list{  //список спичек
+    int len;  //количество спичек
+    struct match list[MAX_L];
 };
 struct v_date{  //вершина графа
     int x, y;
@@ -27,131 +29,126 @@ struct p_date{  //point_date - точка поджога
     double time;
 };
 
-struct arr_m_date read();
-struct g_date make_graph(struct arr_m_date);
+struct match_list read();
+struct g_date make_graph(struct match_list);
 struct p_date calculate(struct g_date);
 void write(struct p_date);
 
 
 int main(){
-    struct arr_m_date date;
-    struct g_date graph;
-    struct p_date point;
+    struct match_list d;
+    struct g_date g;
+    struct p_date p;
 
-    date = read();
+    d = read();
 
-    graph = make_graph(date);
-    point = calculate(graph);
 
-    write(point);
+    g = make_graph(d);
+    p = calculate(g);
+
+    write(p);
 
     return 0;
 }
 
-struct arr_m_date read(){
-    struct arr_m_date date;
+struct match_list read(){
+    struct match_list d;
     FILE *f_in;
     f_in = fopen(FILE_IN, "r");
-    fscanf(f_in, "%d", &date.n);
-    for (int i = 0; i < date.n; i++){
-        fscanf(f_in, "%d%d%d%d%ld", &date.match[i].x1, &date.match[i].y1, &date.match[i].x2, &date.match[i].y2, &date.match[i].time);
+    if (f_in) {
+        fscanf(f_in, "%d", &d.len);
+        for (int i = 0; i < d.len; i++) {
+            fscanf(f_in, "%d%d%d%d%ld", &d.list[i].x1, &d.list[i].y1, &d.list[i].x2, &d.list[i].y2,
+                   &d.list[i].time);
+        }
+        fclose(f_in);
     }
-    fclose(f_in);
+    else{
+        perror("read: fopen() ");
+        exit(errno);
+    }
 
-    return date;
+    return d;
 }
 
-int get_vertex(int vx, int vy, struct g_date *graph){
-    for (int i = 0; i < (*graph).ng; i++){   //проверка на уже существующую вершину
-        if(((*graph).vertex[i].x == vx) && ((*graph).vertex[i].y == vy)) {
+int get_vertex(int vx, int vy, struct g_date *g){
+    for (int i = 0; i < (*g).ng; i++){   //проверка на уже существующую вершину
+        if(((*g).vertex[i].x == vx) && ((*g).vertex[i].y == vy)) {
             return i;
         }
     }
     //ng++;
-    (*graph).vertex[(*graph).ng].x = vx;
-    (*graph).vertex[(*graph).ng].y = vy;
-    for (int i = 0; i != (*graph).ng; i++){  //заполнение несуществующих ребер
-        (*graph).edge[i][(*graph).ng] = NONE_VALUE;
-        (*graph).edge[(*graph).ng][i] = NONE_VALUE;
+    (*g).vertex[(*g).ng].x = vx;
+    (*g).vertex[(*g).ng].y = vy;
+    for (int i = 0; i != (*g).ng; i++){  //заполнение несуществующих ребер
+        (*g).edge[i][(*g).ng] = NONE_VALUE;
+        (*g).edge[(*g).ng][i] = NONE_VALUE;
     }
-    (*graph).edge[(*graph).ng][(*graph).ng] = 0;
-    (*graph).ng++;
-    return (*graph).ng - 1;
+    (*g).edge[(*g).ng][(*g).ng] = 0;
+    (*g).ng++;
+    return (*g).ng - 1;
 
 }
 
-void add_edge(int x1, int y1, int x2,int  y2, long int time, struct g_date *graph){
-    (*graph).edge[get_vertex(x1, y1, graph)][get_vertex(x2, y2, graph)] = time;
-    (*graph).edge[get_vertex(x2, y2, graph)][get_vertex(x1, y1, graph)] = time;
+void add_edge(int x1, int y1, int x2,int  y2, long int time, struct g_date *g){
+    (*g).edge[get_vertex(x1, y1, g)][get_vertex(x2, y2, g)] = time;
+    (*g).edge[get_vertex(x2, y2, g)][get_vertex(x1, y1, g)] = time;
 }
 
-struct g_date make_graph(struct arr_m_date date){
-    struct g_date graph;
-    graph.ng = 0;
-    for (int i = 0; i < date.n; i++){
+struct g_date make_graph(struct match_list d){
+    struct g_date g;
+    g.ng = 0;
+    for (int i = 0; i < d.len; i++){
         //  умножение координат на 2, соответственно удвоение спичек
-        printf("add_edge(%d, %d, %d, %d, %ld);\n",date.match[i].x1 * 2, date.match[i].y1 * 2, date.match[i].x1 + date.match[i].x2, date.match[i].y1 + date.match[i].y2, date.match[i].time);
-        add_edge(date.match[i].x1 * 2, date.match[i].y1 * 2, date.match[i].x1 + date.match[i].x2, date.match[i].y1 + date.match[i].y2, date.match[i].time, &graph);
-        printf("add_edge(%d, %d, %d, %d, %ld);\n", date.match[i].x1 + date.match[i].x2, date.match[i].y1 + date.match[i].y2, date.match[i].x2 * 2, date.match[i].y2 * 2, date.match[i].time);
-        add_edge(date.match[i].x1 + date.match[i].x2, date.match[i].y1 + date.match[i].y2, date.match[i].x2 * 2, date.match[i].y2 * 2, date.match[i].time, &graph);
-    }
-    for (int i = 0; i < graph.ng; i++){
-        for (int j = 0; j < graph.ng; j++){
-            printf("%4ld ",graph.edge[i][j]);
-        }
-        printf("\n");
+        add_edge(d.list[i].x1 * 2, d.list[i].y1 * 2, d.list[i].x1 + d.list[i].x2, d.list[i].y1 + d.list[i].y2, d.list[i].time, &g);
+        add_edge(d.list[i].x1 + d.list[i].x2, d.list[i].y1 + d.list[i].y2, d.list[i].x2 * 2, d.list[i].y2 * 2, d.list[i].time, &g);
     }
 
-    return graph;
+    return g;
 }
 
-double get_time_at(int point, struct g_date graph, double distance[MAX_NG][MAX_NG]){
-    double cur = 0, this_edge;
-    for (int i = 0; i < graph.ng; i++) {
-        if (distance[point][i] > cur) {
-            cur = distance[point][i];
+double get_time_at(int p, struct g_date g, double distance[MAX_NG][MAX_NG]){
+    double current_time = 0;
+    double this_edge;
+    for (int i = 0; i < g.ng; i++) {
+        if (distance[p][i] > current_time) {
+            current_time = distance[p][i];
         }
     }
-    printf("%lf\n", cur);
-    for (int i = 0; i < graph.ng; i++){
-        for (int j = i + 1; j < graph.ng; j++){
-            if (graph.edge[i][j] < NONE_VALUE){
-                printf("edge[%d,%d](%ld) < 999\n", i, j, graph.edge[i][j]);
-                if ((distance[point][i] < (distance[point][j] + (double)graph.edge[i][j])) && (distance[point][j] < (distance[point][i] + (double)graph.edge[i][j]))){
-                    printf("(d[%d,%d](%lf) < (d[%d,%d](%lf) + e[%d,%d](%lf)) && (d[%d,%d](%lf) < (d[%d,%d](%lf) + e[%d,%d](%lf))\n", point, i, distance[point][i], point, j, distance[point][j], i, j, (double)graph.edge[i][j], point, j,distance[point][j] ,point, i,distance[point][i] , i, j, (double)graph.edge[i][j]);
-                    if (distance[point][i] < distance[point][j]){
-                        this_edge = distance[point][j] + ((double)graph.edge[i][j] - (distance[point][j] - distance[point][i]))/2;
-                        printf("%lf = d[%d,%d](%lf) + (e[%d,%d](%lf) - (d[%d,%d](%lf) - d[%d,%d](%lf)))/2\n", this_edge, point, i, distance[point][j], i, j, (double)graph.edge[i][j], point, j, distance[point][j], point, i, distance[point][i] );
+    for (int i = 0; i < g.ng; i++){
+        for (int j = i + 1; j < g.ng; j++){
+            if (g.edge[i][j] < NONE_VALUE){
+                if ((distance[p][i] < (distance[p][j] + (double)g.edge[i][j])) && (distance[p][j] < (distance[p][i] + (double)g.edge[i][j]))){
+                    if (distance[p][i] < distance[p][j]){
+                        this_edge = distance[p][j] + ((double)g.edge[i][j] - (distance[p][j] - distance[p][i])) / 2;
                     } else{
-                        this_edge = distance[point][i] + ((double)graph.edge[i][j] - (distance[point][i] - distance[point][j]))/2;
-                        printf("%lf = d[%d,%d](%lf) + (e[%d,%d](%lf) - (d[%d,%d](%lf) - d[%d,%d](%lf)))/2\n", this_edge, point, i, distance[point][j], i, j, (double)graph.edge[i][j], point, i, distance[point][j], point, j, distance[point][i] );
+                        this_edge = distance[p][i] + ((double)g.edge[i][j] - (distance[p][i] - distance[p][j])) / 2;
                     }
-                    if (this_edge > cur){
-                        cur = this_edge;
-                        printf("current_time - %lf\n", cur);
+                    if (this_edge > current_time){
+                        current_time = this_edge;
                     }
                 }
             }
         }
     }
-    return cur;
+    return current_time;
 }
 
-struct p_date calculate(struct g_date graph){
-    struct p_date point;
+struct p_date calculate(struct g_date g){
+    struct p_date p;
     double distance[MAX_NG][MAX_NG];
     double current_time;
 
-    for (int i = 0; i < graph.ng; i++){
-        for (int j = 0; j < graph.ng; j++){
-            distance[i][j] = (double)graph.edge[i][j];
+    for (int i = 0; i < g.ng; i++){
+        for (int j = 0; j < g.ng; j++){
+            distance[i][j] = (double)g.edge[i][j];
         }
     }
     //алгоритм Флойда
-    for (int k = 0; k < graph.ng; k++){
-        for (int i = 0; i < graph.ng; i++){
+    for (int k = 0; k < g.ng; k++){
+        for (int i = 0; i < g.ng; i++){
             if (distance[i][k] < NONE_VALUE){
-                for (int j = 0; j < graph.ng; j++){
+                for (int j = 0; j < g.ng; j++){
                     if (distance[i][k] + distance[k][j] < distance[i][j]){
                         distance[i][j] = distance[i][k] + distance[k][j];
                     }
@@ -159,33 +156,32 @@ struct p_date calculate(struct g_date graph){
             }
         }
     }
-    for (int i = 0; i < graph.ng; i++){
-        for (int j = 0; j < graph.ng; j++){
-            printf("%4lf ",distance[i][j]);
-        }
-        printf("\n");
-    }
 
-    point.time = NONE_VALUE;
-    for (int i = 0; i < graph.ng; i++){
-        if ((graph.vertex[i].x % 2 == 0) && (graph.vertex[i].y % 2 == 0)) {
-            printf("%d(%d,%d) - ", i, graph.vertex[i].x, graph.vertex[i].y);
-            current_time = get_time_at(i, graph, distance);
-            if (current_time < point.time) {
-                point.time = current_time;
-                point.x = graph.vertex[i].x / 2;
-                point.y = graph.vertex[i].y / 2;
+    p.time = NONE_VALUE;
+    for (int i = 0; i < g.ng; i++){
+        if ((g.vertex[i].x % 2 == 0) && (g.vertex[i].y % 2 == 0)) {
+            current_time = get_time_at(i, g, distance);
+            if (current_time < p.time) {
+                p.time = current_time;
+                p.x = g.vertex[i].x / 2;
+                p.y = g.vertex[i].y / 2;
             }
         }
     }
 
-    return point;
+    return p;
 }
 
-void write(struct p_date point){
+void write(struct p_date p){
     FILE *f_out;
     f_out = fopen(FILE_OUT, "w");
-    fprintf(f_out, "%d %d\n"
-                   "%.2f\n", point.x, point.y, point.time/2);
-    fclose(f_out);
+    if (f_out) {
+        fprintf(f_out, "%d %d\n"
+                       "%.2f\n", p.x, p.y, p.time / 2);
+        fclose(f_out);
+    }
+    else{
+        perror("write: fopen() ");
+        exit(errno);
+    }
 }
