@@ -44,8 +44,6 @@ int main() {
     struct point p;
 
     d = read();
-
-
     g = make_graph(d);
     p = calculate(g);
 
