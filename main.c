@@ -119,7 +119,7 @@ struct graph make_graph(struct match_list d) {
 
 double get_time_at(int p, struct graph g, double distance[MAX_VERTEX][MAX_VERTEX]) {
     double current_time = 0;
-    double this_edge;
+    double current_weight;
     for (int i = 0; i < g.count_vertex; i++) {
         if (distance[p][i] > current_time) {
             current_time = distance[p][i];
@@ -131,12 +131,12 @@ double get_time_at(int p, struct graph g, double distance[MAX_VERTEX][MAX_VERTEX
                 if ((distance[p][i] < (distance[p][j] + (double) g.weight[i][j])) &&
                     (distance[p][j] < (distance[p][i] + (double) g.weight[i][j]))) {
                     if (distance[p][i] < distance[p][j]) {
-                        this_edge = distance[p][j] + ((double) g.weight[i][j] - (distance[p][j] - distance[p][i])) / 2;
+                        current_weight = distance[p][j] + ((double) g.weight[i][j] - (distance[p][j] - distance[p][i])) / 2;
                     } else {
-                        this_edge = distance[p][i] + ((double) g.weight[i][j] - (distance[p][i] - distance[p][j])) / 2;
+                        current_weight = distance[p][i] + ((double) g.weight[i][j] - (distance[p][i] - distance[p][j])) / 2;
                     }
-                    if (this_edge > current_time) {
-                        current_time = this_edge;
+                    if (current_weight > current_time) {
+                        current_time = current_weight;
                     }
                 }
             }
